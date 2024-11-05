@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const EventSchema = new mongoose.Schema({
+const StreamSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -17,16 +17,16 @@ const EventSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  description: {
+  subtitle: {
     type: String,
     required: true,
   },
-  mostWatched: { 
+  mostWatched: {
     type: Boolean,
     default: false,
   },
 });
 
-export const Event = mongoose.model("Event", EventSchema);
+export const Stream = mongoose.model("Stream", StreamSchema);
 
-export default Event;
+export default Stream;

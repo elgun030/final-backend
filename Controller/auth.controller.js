@@ -10,8 +10,15 @@ const omitPassword = (user) => {
 };
 
 export const signUp = async (req, res) => {
-  const { email, fullName, userName, password, confirmPassword, photo, isAdmin } =
-    req.body;
+  const {
+    email,
+    fullName,
+    userName,
+    password,
+    confirmPassword,
+    photo,
+    isAdmin,
+  } = req.body;
 
   const responseMessage = [
     ["fullName", "Geçerli"],
@@ -119,7 +126,7 @@ export const logOut = (req, res) => {
       expires: new Date(0), // Cookie'nin hemen sona ermesini sağlar
       httpOnly: true, // Güvenlik için sadece HTTP isteklerinde erişilebilir
       secure: process.env.NODE_ENV === "production", // Sadece HTTPS üzerinden gönderilir (prod ortamında)
-      sameSite: 'Strict', // Cross-site request forgery (CSRF) saldırılarına karşı koruma sağlar
+      sameSite: "Strict", // Cross-site request forgery (CSRF) saldırılarına karşı koruma sağlar
       path: "/", // Cookie'nin geçerli olduğu yol
     });
 

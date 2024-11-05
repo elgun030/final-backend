@@ -1,123 +1,100 @@
-import Event from "../Models/events.model.js";
-import express from "express";
-import mongoose from "mongoose";
+import { Event } from '../Models/events.model.js'; // Modeli doğru yolu ile içe aktar
 
-const router = express.Router();
-
+// Tüm etkinlikleri listeleme
 export const getAllEvents = async (req, res) => {
   try {
     const events = await Event.find();
     res.status(200).json(events);
   } catch (error) {
-    console.error("Error in getAllEvents:", error);
-    res.status(500).json({ message: "Error fetching events" });
+    console.error('Error fetching events:', error);
+    res.status(500).json({ message: 'Etkinlikler alınırken bir hata oluştu.' });
   }
 };
 
+// Tek bir etkinliği alma
 export const getSingleEvent = async (req, res) => {
-  try {
-    const eventId = req.params.id;
-    const event = await Event.findById(eventId);
+  const { id } = req.params;
 
+  try {
+    const event = await Event.findById(id);
+    
     if (!event) {
-      return res.status(404).json({ message: "Event not found" });
+      return res.status(404).json({ message: 'Etkinlik bulunamadı.' });
     }
 
     res.status(200).json(event);
   } catch (error) {
-    console.error("Error in getSingleEvent:", error);
-    res.status(500).json({ message: "Error fetching event" });
+    console.error('Error fetching event:', error);
+    res.status(500).json({ message: 'Etkinlik alınırken bir hata oluştu.' });
   }
 };
 
+// Yeni etkinlik oluşturma
 export const createEvent = async (req, res) => {
+  const { name, category, image, date, description, mostWatched } = req.body;
+
+  const newEvent = new Event({
+    name,
+    category,
+    image,
+    date,
+    description,
+    mostWatched,
+  });
+
   try {
-    const { name, category, image, date, description, price, mostWatched } = req.body;
-
-    if (!name || !category || !image || !date || !description || !price) {
-      return res.status(400).json({
-        message:
-          "All fields (name, category, image, date, description, price) are required",
-      });
-    }
-
-    const newEvent = new Event({
-      name,
-      category,
-      image,
-      date,
-      description,
-      price,
-      mostWatched: mostWatched || 0, // Varsayılan olarak 0
-    });
     await newEvent.save();
-
-    res
-      .status(201)
-      .json({ message: "Event created successfully", event: newEvent });
+    res.status(201).json(newEvent);
   } catch (error) {
-    console.error("Error in createEvent:", error);
-    if (error.name === "ValidationError") {
-      const messages = Object.values(error.errors).map((val) => val.message);
-      return res.status(400).json({ message: messages.join(". ") });
-    }
+    console.error('Error adding event:', error);
+    res.status(500).json({ message: 'Etkinlik eklenirken bir hata oluştu.' });
   }
 };
 
+// Etkinliği güncelleme
 export const editEvent = async (req, res) => {
+  const { id } = req.params;
+  const { name, category, image, date, description, mostWatched } = req.body;
+
   try {
-    const eventId = req.params.id;
-    const { name, category, image, date, description, price, mostWatched } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(eventId)) {
-      return res.status(400).json({ message: "Invalid event ID format" });
-    }
-
-    const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (category !== undefined) updateData.category = category;
-    if (image !== undefined) updateData.image = image;
-    if (date !== undefined) updateData.date = date;
-    if (description !== undefined) updateData.description = description;
-    if (price !== undefined) updateData.price = price;
-    if (mostWatched !== undefined) updateData.mostWatched = mostWatched; // mostWatched alanını güncelle
-
-    const updatedEvent = await Event.findByIdAndUpdate(eventId, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    const updatedEvent = await Event.findByIdAndUpdate(
+      id,
+      {
+        name,
+        category,
+        image,
+        date,
+        description,
+        mostWatched,
+      },
+      { new: true } // Güncellenmiş belgeyi döndür
+    );
 
     if (!updatedEvent) {
-      return res.status(404).json({ message: "Event not found" });
+      return res.status(404).json({ message: 'Etkinlik bulunamadı.' });
     }
 
-    return res
-      .status(200)
-      .json({ message: "Event updated successfully", event: updatedEvent });
+    res.status(200).json(updatedEvent);
   } catch (error) {
-    console.error("Error updating event:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error('Error updating event:', error);
+    res.status(500).json({ message: 'Etkinlik güncellenirken bir hata oluştu.' });
   }
 };
 
-
+// Etkinliği silme
 export const deleteEvent = async (req, res) => {
+  const { id } = req.params;
+
   try {
-    const eventId = req.params.id;
-
-    if (!eventId.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ message: "Invalid event ID format" });
-    }
-
-    const deletedEvent = await Event.findByIdAndDelete(eventId);
+    const deletedEvent = await Event.findByIdAndDelete(id);
 
     if (!deletedEvent) {
-      return res.status(404).json({ message: "Event not found" });
+      return res.status(404).json({ message: 'Etkinlik bulunamadı.' });
     }
 
-    res.status(200).json({ message: "Event deleted successfully" });
+    res.status(200).json({ message: 'Etkinlik başarıyla silindi.' });
   } catch (error) {
-    console.error("Error in deleteEvent:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error deleting event:', error);
+    res.status(500).json({ message: 'Etkinlik silinirken bir hata oluştu.' });
   }
 };

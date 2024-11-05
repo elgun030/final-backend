@@ -14,6 +14,10 @@ import EventRouter from "./Routes/event.routes.js";
 import SocialRouter from "./Routes/social.routes.js";
 import RectangleRouter from "./Routes/rectangle.routes.js";
 import NewsRouter from "./Routes/news.routes.js";
+import StreamRouter from "./Routes/stream.routes.js";
+import choreographerEventRouter from "./Routes/choreographerEvent.routes.js"
+import ActorRouter from "./Routes/actor.routes.js"
+import BasketRouter from "./Routes/basket.routes.js"
 
 const server = express();
 dotenv.config();
@@ -22,18 +26,17 @@ dotenv.config();
 server.use(
   cors({
     origin: (origin, callback) => {
-      const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174'];
+      const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
       if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-        callback(null, true); // İzin ver
+        callback(null, true); 
       } else {
-        callback(new Error('Not allowed by CORS')); // İzin verme
+        callback(new Error("Not allowed by CORS")); 
       }
     },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   })
 );
-
 
 server.use(express.json());
 server.use(cookieParser());
@@ -47,6 +50,11 @@ server.use("/events", EventRouter);
 server.use("/socials", SocialRouter);
 server.use("/rectangles", RectangleRouter);
 server.use("/news", NewsRouter);
+server.use("/streams", StreamRouter);
+server.use("/choreographerEvents", choreographerEventRouter);
+server.use("/actors", ActorRouter)
+server.use("/baskets", BasketRouter)
+
 
 const PORT = process.env.PORT;
 const MONGODB_URL = process.env.MONGODB_URL;
