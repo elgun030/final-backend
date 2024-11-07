@@ -1,5 +1,5 @@
 import Cart from "../Models/basket.model.js";
-import Product from "../Models/product.model.js"; // Game yerine Product olarak değiştir
+import Product from "../Models/product.model.js"; // Game yerine Product olarak değiştirildi
 
 export const addToCart = async (req, res) => {
   try {
@@ -19,8 +19,6 @@ export const addToCart = async (req, res) => {
         message: "Product not found",
       });
     }
-
-    
 
     let cart = await Cart.findOne({ userId });
     if (!cart) {
@@ -52,58 +50,15 @@ export const addToCart = async (req, res) => {
 };
 
 export const getCartItems = async (req, res) => {
+  const { userId } = req.params;
   try {
-    const { userId } = req.params;
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User id is mandatory!",
-      });
-    }
-
-    const cart = await Cart.findOne({ userId }).populate({
+    const cartItems = await Cart.find({ userId }).populate({
       path: "items.productId",
-      select: "image name price",
+      select: "image name price", // Ürünün resim, isim ve fiyat bilgileri alınıyor
     });
-
-    if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart not found!",
-      });
-    }
-
-    const validItems = cart.items.filter(
-      (productItem) => productItem.productId
-    );
-
-    if (validItems.length < cart.items.length) {
-      cart.items = validItems;
-      await cart.save();
-    }
-
-    const populateCartItems = validItems.map((item) => ({
-      productId: item.productId._id,
-      image: item.productId.image,
-      name: item.productId.name,
-      price: item.productId.price,
-      quantity: item.quantity,
-    }));
-
-    res.status(200).json({
-      success: true,
-      data: {
-        ...cart._doc,
-        items: populateCartItems,
-      },
-    });
+    res.status(200).json(cartItems);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
-      success: false,
-      message: "Error",
-    });
+    res.status(500).json({ error: "Error fetching cart items" });
   }
 };
 
@@ -142,12 +97,12 @@ export const updateCartItem = async (req, res) => {
 
     await cart.populate({
       path: "items.productId",
-      select: "image name price",
+      select: "image name price", // Ürün bilgileri tekrar alınıyor
     });
 
     const populateCartItems = cart.items.map((item) => ({
       productId: item.productId ? item.productId._id : null,
-      image: item.productId ? item.productId.images : null,
+      image: item.productId ? item.productId.image : null, // image alanı düzeltildi
       name: item.productId ? item.productId.name : "Product not found",
       price: item.productId ? item.productId.price : null,
       quantity: item.quantity,
@@ -181,7 +136,7 @@ export const deleteCartItem = async (req, res) => {
 
     const cart = await Cart.findOne({ userId }).populate({
       path: "items.productId",
-      select: "image name price",
+      select: "image name price", // Ürün bilgileri alınıyor
     });
 
     if (!cart) {
@@ -199,12 +154,12 @@ export const deleteCartItem = async (req, res) => {
 
     await cart.populate({
       path: "items.productId",
-      select: "image name price",
+      select: "image name price", // Ürün bilgileri tekrar alınıyor
     });
 
     const populateCartItems = cart.items.map((item) => ({
       productId: item.productId ? item.productId._id : null,
-      image: item.productId ? item.productId.images : null,
+      image: item.productId ? item.productId.image : null, // image alanı düzeltildi
       name: item.productId ? item.productId.name : "Product not found",
       price: item.productId ? item.productId.price : null,
       quantity: item.quantity,

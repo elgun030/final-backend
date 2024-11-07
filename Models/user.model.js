@@ -29,6 +29,16 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    cart: {
+      productId:{
+        type: mongoose.Schema.Types.ObjectId,
+      },
+      quantity: {
+        type: Number,
+        default: 1,
+      }
+     
+    },
   },
   {
     timestamps: true,
