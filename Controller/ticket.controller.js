@@ -1,126 +1,184 @@
 import Ticket from "../Models/ticket.model.js";
-import mongoose from "mongoose";
+import User from "../Models/user.model.js";
+import Event from "../Models/events.model.js";
 
 export const createTicket = async (req, res) => {
   try {
-    const { name, seat, location, time, date } = req.body;
+    const { name, table, limit, price, createdBy, eventId } = req.body;
 
-    if (!name || !seat || !location || !time || !date) {
-      return res.status(400).json({
-        message: "All fields (name, seat, location, time, date) are required",
-      });
+    console.log("Received data:", req.body); // Gelen veriyi kontrol et
+
+    // Verilerin geçerliliğini kontrol et
+    if (!name || !table || !limit || !price || !createdBy || !eventId) {
+      return res.status(400).json({ error: "Lütfen tüm alanları doldurun." });
     }
 
+    // Etkinliği kontrol et
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: "Etkinlik bulunamadı." });
+    }
+
+    // Yeni Ticket objesini oluştur
     const newTicket = new Ticket({
       name,
-      seat,
-      location,
-      time,
-      date,
+      table,
+      limit,
+      price,
+      createdBy,
+      eventId, // Etkinliği ilişkilendiriyoruz
+      remaining: limit, // Başlangıçta remaining, limit kadar olacak
     });
 
+    // Bileti veritabanına kaydet
     await newTicket.save();
 
-    res
-      .status(201)
-      .json({ message: "Ticket created successfully", ticket: newTicket });
+    // Başarı mesajı ve yeni bilet verisini gönder
+    res.status(201).json({
+      message: "Bilet başarıyla oluşturuldu.",
+      ticket: newTicket,
+    });
   } catch (error) {
-    console.error("Error in createTicket:", error);
-    if (error.name === "ValidationError") {
-      const messages = Object.values(error.errors).map((val) => val.message);
-      return res.status(400).json({ message: messages.join(". ") });
-    }
-    res.status(500).json({ message: "Server error" });
+    console.error("Error during ticket creation:", error); // Hata logu
+    res.status(500).json({ error: error.message });
   }
 };
 
-export const getTickets = async (req, res) => {
+export const buyTicket = async (req, res) => {
   try {
-    const tickets = await Ticket.find();
+    const { ticketId, userId } = req.body;
+
+    if (!ticketId || !userId) {
+      return res.status(400).json({ error: "ticketId ve userId gereklidir." });
+    }
+
+    const ticket = await Ticket.findById(ticketId).populate("eventId"); // Etkinlikle birlikte ticket'ı bul
+    if (!ticket) {
+      return res.status(404).json({ error: "Bilet bulunamadı." });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    }
+
+    // Bilet limitini kontrol et ve satın alma işlemini yap
+    if (ticket.remaining > 0) {
+      ticket.remaining -= 1; // Bilet satıldı, remaining değeri azaltılacak
+
+      // users dizisini kontrol et ve kullanıcıyı ekle
+      if (!ticket.users) {
+        ticket.users = []; // Eğer users dizisi tanımlı değilse, başlatıyoruz
+      }
+
+      ticket.users.push(userId); // Kullanıcıyı ticket'ın users dizisine ekle
+
+      await ticket.save(); // Biletin kalan sayısı güncelleniyor
+
+      res.status(200).json({ message: "Bilet başarıyla alındı." });
+    } else {
+      res.status(400).json({ error: "Bilet kalmadı." });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const listTickets = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Admin kontrolü
+    const user = await User.findById(userId);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ error: "Yönetici yetkiniz yok." });
+    }
+
+    // Tüm biletleri al
+    const tickets = await Ticket.find().populate("eventId"); // Etkinlik bilgisiyle birlikte biletleri al
+
+    if (!tickets || tickets.length === 0) {
+      return res.status(404).json({ error: "Hiç bilet bulunamadı." });
+    }
+
     res.status(200).json(tickets);
   } catch (error) {
-    console.error("Error in getTickets:", error);
-    res.status(500).json({ message: "Error fetching tickets" });
+    res.status(500).json({ error: error.message });
   }
 };
 
-export const getTicketById = async (req, res) => {
+export const getUserTickets = async (req, res) => {
   try {
-    const ticketId = req.params.id;
+    const { userId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(ticketId)) {
-      return res.status(400).json({ message: "Invalid ticket ID format" });
+    // Kullanıcıya ait biletleri veritabanından al
+    const tickets = await Ticket.find({ users: userId });
+
+    if (!tickets || tickets.length === 0) {
+      return res.status(404).json({ error: "Kullanıcının hiç bileti yok." });
+    }
+
+    res.status(200).json(tickets);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+const checkAdmin = async (req, res, next) => {
+  const { userId } = req.body;
+
+  const user = await User.findById(userId);
+
+  if (!user || !user.isAdmin) {
+    return res.status(403).json({ error: "Yönetici yetkiniz yok." });
+  }
+
+  next();
+};
+
+// ticket.controller.js
+
+export const updateTicketStatus = async (req, res) => {
+  try {
+    const { ticketId, status } = req.body;
+
+    if (!ticketId || !status) {
+      return res.status(400).json({ error: "ticketId ve status gereklidir." });
     }
 
     const ticket = await Ticket.findById(ticketId);
 
     if (!ticket) {
-      return res.status(404).json({ message: "Ticket not found" });
+      return res.status(404).json({ error: "Bilet bulunamadı." });
     }
 
-    res.status(200).json(ticket);
+    ticket.status = status; // Biletin durumunu güncelle
+    await ticket.save();
+
+    res.status(200).json({ message: "Bilet durumu güncellendi." });
   } catch (error) {
-    console.error("Error in getTicketById:", error);
-    res.status(500).json({ message: "Error fetching ticket" });
+    res.status(500).json({ error: error.message });
   }
 };
 
-export const updateTicket = async (req, res) => {
+export const getEventTickets = async (req, res) => {
+  const { eventId } = req.params;
+  console.log("Received eventId:", eventId); // eventId'yi log'layın
+
   try {
-    const ticketId = req.params.id;
-    const { name, seat, location, time, date } = req.body;
+    const tickets = await Ticket.find({ eventId });
+    console.log("Tickets found:", tickets); // Bulunan biletleri log'layın
 
-    if (!mongoose.Types.ObjectId.isValid(ticketId)) {
-      return res.status(400).json({ message: "Invalid ticket ID format" });
+    if (tickets.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No tickets found for this event." });
     }
 
-    const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (seat !== undefined) updateData.seat = seat;
-    if (location !== undefined) updateData.location = location;
-    if (time !== undefined) updateData.time = time;
-    if (date !== undefined) updateData.date = date;
-
-    const updatedTicket = await Ticket.findByIdAndUpdate(ticketId, updateData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updatedTicket) {
-      return res.status(404).json({ message: "Ticket not found" });
-    }
-
-    res
-      .status(200)
-      .json({ message: "Ticket updated successfully", ticket: updatedTicket });
+    return res.status(200).json(tickets);
   } catch (error) {
-    console.error("Error in updateTicket:", error);
-    // Mongoose validation hatalarını yakalama
-    if (error.name === "ValidationError") {
-      const messages = Object.values(error.errors).map((val) => val.message);
-      return res.status(400).json({ message: messages.join(". ") });
-    }
-    res.status(500).json({ message: "Error updating ticket" });
-  }
-};
-
-export const deleteTicket = async (req, res) => {
-  try {
-    const ticketId = req.params.id;
-
-    if (!mongoose.Types.ObjectId.isValid(ticketId)) {
-      return res.status(400).json({ message: "Invalid ticket ID format" });
-    }
-
-    const ticket = await Ticket.findByIdAndDelete(ticketId);
-
-    if (!ticket) {
-      return res.status(404).json({ message: "Ticket not found" });
-    }
-
-    res.status(200).json({ message: "Ticket deleted successfully" });
-  } catch (error) {
-    console.error("Error in deleteTicket:", error);
-    res.status(500).json({ message: "Error deleting ticket" });
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while fetching tickets." });
   }
 };

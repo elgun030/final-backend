@@ -1,5 +1,5 @@
 import User from "../Models/user.model.js";
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
 export const createUser = async (req, res) => {
   try {
@@ -18,13 +18,21 @@ export const createUser = async (req, res) => {
       else if (userExists.userName === userName) conflictField = "Username";
       else if (userExists.photo === photo) conflictField = "Photo";
 
-      return res.status(400).json({ message: `${conflictField} already exists` });
+      return res
+        .status(400)
+        .json({ message: `${conflictField} already exists` });
     }
 
     // Şifreyi hashle
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({ email, password: hashedPassword, fullName, userName, photo });
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      fullName,
+      userName,
+      photo,
+    });
     await newUser.save();
 
     const userResponse = {
@@ -37,13 +45,17 @@ export const createUser = async (req, res) => {
       updatedAt: newUser.updatedAt,
     };
 
-    res.status(201).json({ message: "User created successfully", user: userResponse });
+    res
+      .status(201)
+      .json({ message: "User created successfully", user: userResponse });
   } catch (error) {
     console.error("Error in createUser:", error);
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0];
       return res.status(400).json({
-        message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`,
+        message: `${
+          field.charAt(0).toUpperCase() + field.slice(1)
+        } already exists`,
       });
     }
     res.status(500).json({ message: "Server error" });
@@ -100,19 +112,24 @@ export const editUser = async (req, res) => {
       runValidators: true,
     }).select("-password");
 
-    res.status(200).json({ message: "User updated successfully", user: updatedUser });
+    res
+      .status(200)
+      .json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Error in editUser:", error);
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0];
       return res.status(400).json({
-        message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`,
+        message: `${
+          field.charAt(0).toUpperCase() + field.slice(1)
+        } already exists`,
       });
     }
-    res.status(500).json({ message: "Error editing user", error: error.message }); // Daha detaylı hata mesajı
+    res
+      .status(500)
+      .json({ message: "Error editing user", error: error.message }); // Daha detaylı hata mesajı
   }
 };
-
 
 export const deleteUser = async (req, res) => {
   try {

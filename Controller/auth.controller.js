@@ -102,23 +102,36 @@ export const signIn = async (req, res) => {
       !existingUser ||
       !(await bcrypt.compare(password, existingUser.password))
     ) {
-      return res.status(401).send("Yanlış kullanıcı adı veya şifre");
+      return res
+        .status(401)
+        .send({ message: "Yanlış kullanıcı adı veya şifre" });
     }
 
     const token = jwt.sign({ id: existingUser._id }, process.env.JWT_SECRET, {
       expiresIn: "15d",
     });
 
+    // Token'ı cookie'ye kaydet
+    res.cookie("token", token, {
+      expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 gün geçerlilik
+      httpOnly: true, // Sadece HTTP istekleriyle erişilebilir
+      secure: process.env.NODE_ENV === "production", // Sadece HTTPS üzerinde
+      sameSite: "Strict", // CSRF'ye karşı korunma
+      path: "/", // Geçerli yol
+    });
+
+    // Token'ı yanıtla da gönder
     return res.status(200).send({
       message: "Başarıyla giriş yapıldı",
-      data: omitPassword(existingUser),
-      token,
+      data: omitPassword(existingUser), // Şifreyi dışarıda bırakıyoruz
+      token, // Burada token'ı yanıtın içine ekliyoruz
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ responseMessage: "İç sunucu hatası" });
   }
 };
+
 export const logOut = (req, res) => {
   try {
     // Cookie'deki JWT'yi sil

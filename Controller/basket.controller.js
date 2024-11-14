@@ -69,7 +69,7 @@ export const updateCartItem = async (req, res) => {
     if (!userId || !productId || quantity <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid data provided!",
+        message: "Invalid data provided!", // Buradaki hata mesajı, gelen verinin yanlış olduğunu belirtiyor
       });
     }
 
@@ -88,41 +88,27 @@ export const updateCartItem = async (req, res) => {
     if (findCurrentProductIndex === -1) {
       return res.status(404).json({
         success: false,
-        message: "Cart item not present!",
+        message: "Cart item not found!",
       });
     }
 
     cart.items[findCurrentProductIndex].quantity = quantity;
     await cart.save();
 
-    await cart.populate({
-      path: "items.productId",
-      select: "image name price", // Ürün bilgileri tekrar alınıyor
-    });
-
-    const populateCartItems = cart.items.map((item) => ({
-      productId: item.productId ? item.productId._id : null,
-      image: item.productId ? item.productId.image : null, // image alanı düzeltildi
-      name: item.productId ? item.productId.name : "Product not found",
-      price: item.productId ? item.productId.price : null,
-      quantity: item.quantity,
-    }));
-
     res.status(200).json({
       success: true,
-      data: {
-        ...cart._doc,
-        items: populateCartItems,
-      },
+      data: cart.items[findCurrentProductIndex], // Güncellenmiş öğe verisini döndürüyoruz
     });
   } catch (error) {
     console.log(error);
     res.status(500).json({
       success: false,
-      message: "Error",
+      message: "Error updating cart item",
     });
   }
 };
+
+// basket.controller.js
 
 export const deleteCartItem = async (req, res) => {
   try {
@@ -134,9 +120,10 @@ export const deleteCartItem = async (req, res) => {
       });
     }
 
+    // İlgili kullanıcının sepetini bulma ve ürün bilgilerini alma
     const cart = await Cart.findOne({ userId }).populate({
       path: "items.productId",
-      select: "image name price", // Ürün bilgileri alınıyor
+      select: "image name price",
     });
 
     if (!cart) {
@@ -146,20 +133,18 @@ export const deleteCartItem = async (req, res) => {
       });
     }
 
+    // Ürünü sepetten filtreleyerek çıkarma
     cart.items = cart.items.filter(
       (item) => item.productId._id.toString() !== productId
     );
 
+    // Sepeti güncelleme
     await cart.save();
 
-    await cart.populate({
-      path: "items.productId",
-      select: "image name price", // Ürün bilgileri tekrar alınıyor
-    });
-
+    // Güncellenmiş ürün bilgilerini alarak yanıt oluşturma
     const populateCartItems = cart.items.map((item) => ({
       productId: item.productId ? item.productId._id : null,
-      image: item.productId ? item.productId.image : null, // image alanı düzeltildi
+      image: item.productId ? item.productId.image : null,
       name: item.productId ? item.productId.name : "Product not found",
       price: item.productId ? item.productId.price : null,
       quantity: item.quantity,
@@ -176,7 +161,7 @@ export const deleteCartItem = async (req, res) => {
     console.log(error);
     res.status(500).json({
       success: false,
-      message: "Error",
+      message: "An error occurred while deleting the cart item.",
     });
   }
 };

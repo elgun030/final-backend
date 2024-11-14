@@ -7,6 +7,10 @@ const CartSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    // totalAmount:{
+    //   type: Number,
+    //   required: true,
+    // },
     items: [
       {
         productId: {
@@ -22,6 +26,7 @@ const CartSchema = new mongoose.Schema(
       },
     ],
   },
+
   {
     timestamps: true,
   }
