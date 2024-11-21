@@ -1,147 +1,102 @@
-import { Event } from "../Models/events.model.js"; // Modeli doğru yolu ile içe aktar
-import Table from "../Models/table.model.js";
-import Ticket from "../Models/ticket.model.js";
+import Event from "../Models/event.model.js";
 
-// Tüm etkinlikleri listeleme
+export const addEvent = async (req, res) => {
+  const { name, image, date, price, availableSeats } = req.body;
+
+  if (!name || !image || !date || !price || !availableSeats) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  const parsedPrice = parseFloat(price);
+  if (isNaN(parsedPrice)) {
+    return res.status(400).json({ message: "Price must be a valid number" });
+  }
+
+  try {
+    const newEvent = new Event({
+      name,
+      image,
+      date,
+      price: parsedPrice,
+      availableSeats,
+    });
+
+    await newEvent.save();
+    res.status(201).json(newEvent);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error adding event", error: error.message });
+  }
+};
+
 export const getAllEvents = async (req, res) => {
   try {
     const events = await Event.find();
     res.status(200).json(events);
   } catch (error) {
-    console.error("Error fetching events:", error);
-    res.status(500).json({ message: "Etkinlikler alınırken bir hata oluştu." });
+    res
+      .status(500)
+      .json({ message: "Error fetching events", error: error.message });
   }
 };
 
-// Tek bir etkinliği alma (ID'ye göre)
-export const getSingleEvent = async (req, res) => {
-  const { id } = req.params; // Etkinlik ID'sini URL'den al
+export const getEventById = async (req, res) => {
+  const { id } = req.params;
 
   try {
-    const event = await Event.findById(id)
-      .populate("tickets") // Ticket'ları popüle et
-      .populate("tables"); // Tables'ı popüle et
+    const event = await Event.findById(id);
 
     if (!event) {
-      return res.status(404).json({ message: "Etkinlik bulunamadı." });
+      return res.status(404).json({ message: "Event not found" });
     }
 
-    res.status(200).json(event); // Etkinliği JSON olarak döndür
+    res.status(200).json(event);
   } catch (error) {
-    console.error("Error fetching event:", error);
-    res.status(500).json({ message: "Etkinlik alınırken bir hata oluştu." });
+    res
+      .status(500)
+      .json({ message: "Error fetching event", error: error.message });
   }
 };
 
-export const createEvent = async (req, res) => {
-  const { name, category, image, date, description, mostWatched, tableName } =
-    req.body;
-
-  // Yeni etkinliği oluştur
-  const newEvent = new Event({
-    name,
-    category,
-    image,
-    date,
-    description,
-    mostWatched,
-  });
-
-  try {
-    // Etkinliği kaydet
-    const event = await newEvent.save();
-
-    // Masayı oluşturun ve name alanını ekleyin
-    const tableNumber = (await Table.countDocuments({ event: event._id })) + 1; // Masa numarası artıyor
-    const table = new Table({
-      name: tableName || `Table ${event.name} - ${tableNumber}`, // Eğer tableName gelmezse, etkinlik ismi ve numara
-      number: tableNumber, // Artırılan numara
-      capacity: 1, // Kapasite 1 kişi
-      event: event._id, // Etkinlik ID'sini burada ekliyoruz
-    });
-
-    // Table'ı kaydedin
-    const savedTable = await table.save();
-
-    // Ticket modeline uygun ObjectId'leri ve remaining alanını ekleyin
-    const ticket = new Ticket({
-      name: `${name} - Ticket`,
-      table: savedTable._id, // Şimdi table ID'sini geçiyoruz
-      limit: 100,
-      price: 50,
-      createdBy: "64bba365a5f4939b3b47d1a2", // Geçerli bir admin ID'si (örnek)
-      event: event._id, // Etkinlik ID'sini burada ekliyoruz
-      remaining: 100, // Remaining alanını doldurun
-    });
-
-    // Ticket'ı kaydedin
-    const savedTicket = await ticket.save();
-
-    // Etkinlik ve ticket/table ilişkilendirme işlemi
-    await Event.findByIdAndUpdate(
-      event._id,
-      {
-        $push: { tickets: savedTicket._id, tables: savedTable._id }, // Ticket ve table ID'lerini etkinliğe ekleyin
-      },
-      { new: true }
-    );
-
-    res.status(201).json({ event, ticket: savedTicket, table: savedTable });
-  } catch (error) {
-    console.error("Error adding event, ticket, and table:", error);
-    res.status(500).json({
-      message: "Etkinlik, bilet ve masa eklenirken bir hata oluştu.",
-      error: error.message,
-    });
-  }
-};
-
-// Etkinliği güncelleme
-export const editEvent = async (req, res) => {
+export const updateEvent = async (req, res) => {
   const { id } = req.params;
-  const { name, category, image, date, description, mostWatched } = req.body;
+  const updateData = req.body;
 
   try {
-    const updatedEvent = await Event.findByIdAndUpdate(
-      id,
-      {
-        name,
-        category,
-        image,
-        date,
-        description,
-        mostWatched,
-      },
-      { new: true } // Güncellenmiş belgeyi döndür
-    );
+    const updatedEvent = await Event.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!updatedEvent) {
-      return res.status(404).json({ message: "Etkinlik bulunamadı." });
+      return res.status(404).json({ message: "Event not found" });
     }
 
     res.status(200).json(updatedEvent);
   } catch (error) {
-    console.error("Error updating event:", error);
     res
       .status(500)
-      .json({ message: "Etkinlik güncellenirken bir hata oluştu." });
+      .json({ message: "Error updating event", error: error.message });
   }
 };
 
-// Etkinliği silme
 export const deleteEvent = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // URL'den ID al
 
   try {
     const deletedEvent = await Event.findByIdAndDelete(id);
 
     if (!deletedEvent) {
-      return res.status(404).json({ message: "Etkinlik bulunamadı." });
+      return res.status(404).json({ message: "Event not found" });
     }
 
-    res.status(200).json({ message: "Etkinlik başarıyla silindi." });
+    res
+      .status(200)
+      .json({ message: "Event deleted successfully", event: deletedEvent });
   } catch (error) {
-    console.error("Error deleting event:", error);
-    res.status(500).json({ message: "Etkinlik silinirken bir hata oluştu." });
+    res
+      .status(500)
+      .json({ message: "Error deleting event", error: error.message });
   }
 };

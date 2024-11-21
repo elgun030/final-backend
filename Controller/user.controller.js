@@ -88,49 +88,6 @@ export const getSingleUser = async (req, res) => {
   }
 };
 
-export const editUser = async (req, res) => {
-  try {
-    const userId = req.params.id;
-
-    // Kullanıcının varlığını kontrol etme
-    const existingUser = await User.findById(userId);
-    if (!existingUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const { email, password, fullName, userName, photo } = req.body;
-
-    const updateData = { email, fullName, userName, photo };
-
-    if (password) {
-      // Eğer şifre varsa, hashleme yapıyoruz
-      updateData.password = await bcrypt.hash(password, 10);
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
-
-    res
-      .status(200)
-      .json({ message: "User updated successfully", user: updatedUser });
-  } catch (error) {
-    console.error("Error in editUser:", error);
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyValue)[0];
-      return res.status(400).json({
-        message: `${
-          field.charAt(0).toUpperCase() + field.slice(1)
-        } already exists`,
-      });
-    }
-    res
-      .status(500)
-      .json({ message: "Error editing user", error: error.message }); // Daha detaylı hata mesajı
-  }
-};
-
 export const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;

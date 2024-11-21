@@ -10,24 +10,27 @@ const choreographerEventSchema = new mongoose.Schema({
     required: true,
   },
   date: {
-    type: Date,  // Tarih alanı
+    type: Date,
     required: true,
   },
   image: {
-    type: String, // Etkinliğe ait görselin URL'si
+    type: String,
     required: true,
   },
   choreographer: {
-    type: String, // Koreografın adı
+    type: String,
     required: true,
   },
   gender: {
-    type: String, // Koreografın cinsiyeti
-    enum: ["Male", "Female",], // Geçerli cinsiyet seçenekleri
+    type: String,
+    enum: ["Male", "Female"],
     required: true,
   },
 });
 
-const ChoreographerEvent = mongoose.model("ChoreographerEvent", choreographerEventSchema);
+const ChoreographerEvent = mongoose.model(
+  "ChoreographerEvent",
+  choreographerEventSchema
+);
 
 export default ChoreographerEvent;

@@ -1,6 +1,5 @@
-import  Rectangle  from "../Models/rectangle.model.js"; // Modeli içe aktar
+import Rectangle from "../Models/rectangle.model.js";
 
-// Tüm rectangle'ları al
 export const getAllRectangles = async (req, res) => {
   try {
     const rectangles = await Rectangle.find();
@@ -10,7 +9,6 @@ export const getAllRectangles = async (req, res) => {
   }
 };
 
-// Tek bir rectangle'ı al
 export const getSingleRectangle = async (req, res) => {
   const { id } = req.params;
 
@@ -25,7 +23,6 @@ export const getSingleRectangle = async (req, res) => {
   }
 };
 
-// Yeni bir rectangle oluştur
 export const createRectangle = async (req, res) => {
   const { name, image, video, title } = req.body;
 
@@ -38,7 +35,6 @@ export const createRectangle = async (req, res) => {
   }
 };
 
-// Rectangle'ı sil
 export const deleteRectangle = async (req, res) => {
   const { id } = req.params;
 
@@ -53,7 +49,6 @@ export const deleteRectangle = async (req, res) => {
   }
 };
 
-// Rectangle'ı güncelle
 export const editRectangle = async (req, res) => {
   const { id } = req.params;
   const { name, image, video, title } = req.body;
@@ -62,7 +57,7 @@ export const editRectangle = async (req, res) => {
     const updatedRectangle = await Rectangle.findByIdAndUpdate(
       id,
       { name, image, video, title },
-      { new: true, runValidators: true } // Yeni güncellenmiş belgeyi döndür
+      { new: true, runValidators: true }
     );
     if (!updatedRectangle) {
       return res.status(404).json({ message: "Rectangle not found" });

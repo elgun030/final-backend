@@ -1,6 +1,5 @@
 import NewsSection from "../Models/newsSection.model.js";
 
-// Get all news
 export const getAllNews = async (req, res) => {
   try {
     const news = await NewsSection.find();
@@ -10,7 +9,6 @@ export const getAllNews = async (req, res) => {
   }
 };
 
-// Get a single news by id
 export const getSingleNews = async (req, res) => {
   try {
     const news = await NewsSection.findById(req.params.id);
@@ -23,11 +21,9 @@ export const getSingleNews = async (req, res) => {
   }
 };
 
-// Create a new news
 export const createNews = async (req, res) => {
   const { image, title, subtitle } = req.body;
 
-  // Validate request
   if (!image || !title || !subtitle) {
     return res.status(400).json({ message: "All fields are required" });
   }
@@ -46,7 +42,6 @@ export const createNews = async (req, res) => {
   }
 };
 
-// Edit news by id
 export const editNews = async (req, res) => {
   const { image, title, subtitle } = req.body;
 
@@ -67,7 +62,6 @@ export const editNews = async (req, res) => {
   }
 };
 
-// Delete news by id
 export const deleteNews = async (req, res) => {
   try {
     const news = await NewsSection.findById(req.params.id);

@@ -1,6 +1,5 @@
-import ChoreographerEvent from "../Models/choreographerEvent.model.js"; // Modeli içe aktarın
+import ChoreographerEvent from "../Models/choreographerEvent.model.js";
 
-// Yeni etkinlik oluştur
 export const createChoreographerEvent = async (req, res) => {
   try {
     const event = new ChoreographerEvent(req.body);
@@ -11,7 +10,6 @@ export const createChoreographerEvent = async (req, res) => {
   }
 };
 
-// Tüm etkinlikleri listele
 export const getAllChoreographerEvents = async (req, res) => {
   try {
     const events = await ChoreographerEvent.find();
@@ -21,12 +19,11 @@ export const getAllChoreographerEvents = async (req, res) => {
   }
 };
 
-// Tek bir etkinliği ID ile al
 export const getChoreographerEventById = async (req, res) => {
   try {
     const event = await ChoreographerEvent.findById(req.params.id);
     if (!event) {
-      return res.status(404).json({ message: "Etkinlik bulunamadı." });
+      return res.status(404).json({ message: "No events found." });
     }
     res.status(200).json(event);
   } catch (error) {
@@ -34,15 +31,18 @@ export const getChoreographerEventById = async (req, res) => {
   }
 };
 
-// Etkinliği düzenle
 export const editChoreographerEvent = async (req, res) => {
   try {
-    const event = await ChoreographerEvent.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const event = await ChoreographerEvent.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
     if (!event) {
-      return res.status(404).json({ message: "Etkinlik bulunamadı." });
+      return res.status(404).json({ message: "No events found." });
     }
     res.status(200).json(event);
   } catch (error) {
@@ -50,12 +50,11 @@ export const editChoreographerEvent = async (req, res) => {
   }
 };
 
-// Etkinliği sil
 export const deleteChoreographerEvent = async (req, res) => {
   try {
     const event = await ChoreographerEvent.findByIdAndDelete(req.params.id);
     if (!event) {
-      return res.status(404).json({ message: "Etkinlik bulunamadı." });
+      return res.status(404).json({ message: "No events found." });
     }
     res.status(204).json();
   } catch (error) {

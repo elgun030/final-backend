@@ -1,9 +1,7 @@
-// import { Auth } from "../Models/auth.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../Models/user.model.js";
 
-// Şifreyi çıkarmak için yardımcı fonksiyon
 const omitPassword = (user) => {
   const { password, ...userWithoutPassword } = user.toObject();
   return userWithoutPassword;
@@ -21,32 +19,32 @@ export const signUp = async (req, res) => {
   } = req.body;
 
   const responseMessage = [
-    ["fullName", "Geçerli"],
-    ["userName", "Geçerli"],
-    ["password", "Geçerli"],
-    ["confirmPassword", "Geçerli"],
-    ["photo", "Geçerli"],
-    ["email", "Geçerli"],
-    ["isAdmin", "Geçerli"],
+    ["fullName", "Valid"],
+    ["userName", "Valid"],
+    ["password", "Valid"],
+    ["confirmPassword", "Valid"],
+    ["photo", "Valid"],
+    ["email", "Valid"],
+    ["isAdmin", "Valid"],
   ];
 
   if (fullName.length < 3)
-    responseMessage[0][1] = "Tam ad en az 3 karakter olmalıdır";
+    responseMessage[0][1] = "Full name must be at least 3 characters";
   if (userName.length < 3)
-    responseMessage[1][1] = "Kullanıcı adı en az 3 karakter olmalıdır";
+    responseMessage[1][1] = "Username must be at least 3 characters";
   if (password.length < 6)
-    responseMessage[2][1] = "Şifre en az 6 karakter olmalıdır";
+    responseMessage[2][1] = "Password must be at least 6 characters";
   if (confirmPassword !== password)
-    responseMessage[3][1] = "Şifreler eşleşmiyor";
-  if (!photo) responseMessage[4][1] = "Profil resmi URL'si gereklidir";
+    responseMessage[3][1] = "Passwords do not match";
+  if (!photo) responseMessage[4][1] = "Profile picture URL is required";
 
-  if (responseMessage.some(([_, msg]) => msg !== "Geçerli")) {
+  if (responseMessage.some(([_, msg]) => msg !== "Valid")) {
     return res.status(400).json({ responseMessage });
   }
 
   try {
     if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET ortam değişkeni tanımlı değil");
+      throw new Error("JWT_SECRET environment variable not defined");
     }
 
     const auth = await User.findOne({ userName });
@@ -55,7 +53,7 @@ export const signUp = async (req, res) => {
         ([field]) => field === "userName"
       );
       if (userNameIndex !== -1) {
-        responseMessage[userNameIndex][1] = "Kullanıcı adı zaten mevcut";
+        responseMessage[userNameIndex][1] = "Username already exists";
       }
       return res.status(400).json({ responseMessage });
     }
@@ -78,13 +76,13 @@ export const signUp = async (req, res) => {
     });
 
     return res.status(201).json({
-      responseMessage: "Kullanıcı başarıyla oluşturuldu",
+      responseMessage: "User created successfully",
       data: omitPassword(newAuth),
       token,
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ responseMessage: "İç sunucu hatası" });
+    return res.status(500).json({ responseMessage: "Internal Server Error" });
   }
 };
 
@@ -93,7 +91,7 @@ export const signIn = async (req, res) => {
 
   try {
     if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET ortam değişkeni tanımlı değil");
+      throw new Error("JWT_SECRET environment variable not defined");
     }
 
     const existingUser = await User.findOne({ userName });
@@ -102,56 +100,49 @@ export const signIn = async (req, res) => {
       !existingUser ||
       !(await bcrypt.compare(password, existingUser.password))
     ) {
-      return res
-        .status(401)
-        .send({ message: "Yanlış kullanıcı adı veya şifre" });
+      return res.status(401).send({ message: "Wrong username or password" });
     }
 
     const token = jwt.sign({ id: existingUser._id }, process.env.JWT_SECRET, {
       expiresIn: "15d",
     });
 
-    // Token'ı cookie'ye kaydet
     res.cookie("token", token, {
-      expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 gün geçerlilik
-      httpOnly: true, // Sadece HTTP istekleriyle erişilebilir
-      secure: process.env.NODE_ENV === "production", // Sadece HTTPS üzerinde
-      sameSite: "Strict", // CSRF'ye karşı korunma
-      path: "/", // Geçerli yol
+      expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      path: "/",
     });
 
-    // Token'ı yanıtla da gönder
     return res.status(200).send({
-      message: "Başarıyla giriş yapıldı",
-      data: omitPassword(existingUser), // Şifreyi dışarıda bırakıyoruz
-      token, // Burada token'ı yanıtın içine ekliyoruz
+      message: "Successfully logged in",
+      data: omitPassword(existingUser),
+      token,
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ responseMessage: "İç sunucu hatası" });
+    return res.status(500).json({ responseMessage: "Internal Server Error" });
   }
 };
 
 export const logOut = (req, res) => {
   try {
-    // Cookie'deki JWT'yi sil
     res.cookie("token", "", {
-      expires: new Date(0), // Cookie'nin hemen sona ermesini sağlar
-      httpOnly: true, // Güvenlik için sadece HTTP isteklerinde erişilebilir
-      secure: process.env.NODE_ENV === "production", // Sadece HTTPS üzerinden gönderilir (prod ortamında)
-      sameSite: "Strict", // Cross-site request forgery (CSRF) saldırılarına karşı koruma sağlar
-      path: "/", // Cookie'nin geçerli olduğu yol
+      expires: new Date(0),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      path: "/",
     });
 
-    // Başarılı çıkış mesajı gönder
-    return res.status(200).json({ message: "Başarıyla çıkış yapıldı" });
+    return res.status(200).json({ message: "Successfully logged out" });
   } catch (error) {
     console.error("Logout error:", error);
-    return res.status(500).json({ message: "İç sunucu hatası" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-// İhtiyaç duyulursa kullanmak için yorumdan çıkarın
 // export const logout = async (req, res) => {
 //   res.cookie("jwt", "", {
 //     expires: new Date(0),

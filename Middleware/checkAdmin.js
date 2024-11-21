@@ -13,17 +13,14 @@ export const checkAdmin = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.id;
 
-    // Log: Decoded token bilgisi
     console.log("Decoded token:", decoded);
 
-    // ObjectId geçerliliğini kontrol et
     if (!mongoose.Types.ObjectId.isValid(req.userId)) {
       return res.status(400).json({ error: "Invalid User ID" });
     }
 
     const user = await User.findById(req.userId);
 
-    // Log: Kullanıcı bilgilerini kontrol et
     console.log("User fetched from DB:", user);
 
     if (!user) {
@@ -34,7 +31,6 @@ export const checkAdmin = async (req, res, next) => {
       return res.status(403).json({ error: "Admin yetkisi gereklidir." });
     }
 
-    // Admin yetkisi varsa, devam et
     next();
   } catch (error) {
     console.error("Error in checkAdmin middleware:", error);

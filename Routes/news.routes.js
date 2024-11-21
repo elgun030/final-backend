@@ -1,18 +1,18 @@
 import express from "express";
 import {
-    getAllNews,
-    getSingleNews,
-    createNews,
-    editNews,
-    deleteNews
-} from "../Controller/news.controller.js"; // Kontrolör dosyasının yoluna göre ayarlayın
+  getAllNews,
+  getSingleNews,
+  createNews,
+  editNews,
+  deleteNews,
+} from "../Controller/news.controller.js";
 
 const router = express.Router();
 
-router.get("/", getAllNews); // Tüm haberleri listele
-router.get("/:id", getSingleNews); // Tek bir haberi al
-router.post("/", createNews); // Yeni haber ekle
-router.put("/:id", editNews); // Haber güncelle
-router.delete("/:id", deleteNews); // Haber sil
+router.get("/", getAllNews);
+router.get("/:id", getSingleNews);
+router.post("/", createNews);
+router.put("/:id", editNews);
+router.delete("/:id", deleteNews);
 
 export default router;

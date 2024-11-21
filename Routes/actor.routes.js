@@ -3,10 +3,10 @@ import { createActor, getAllActors, getActorById, updateActor, deleteActor } fro
 
 const router = express.Router();
 
-router.post('/', createActor); // Aktör oluştur
-router.get('/', getAllActors); // Tüm aktörleri listele
-router.get('/:id', getActorById); // Belirli bir aktörü al
-router.put('/:id', updateActor); // Aktörü güncelle
-router.delete('/:id', deleteActor); // Aktörü sil
+router.post('/', createActor); 
+router.get('/', getAllActors); 
+router.get('/:id', getActorById); 
+router.put('/:id', updateActor); 
+router.delete('/:id', deleteActor); 
 
 export default router;

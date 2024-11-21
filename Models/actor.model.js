@@ -16,30 +16,30 @@ const actorSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      required: true, // Resim URL'si için
+      required: true,
     },
     gender: {
       type: String,
-      enum: ["Male", "Female", "Other"], // Cinsiyet seçenekleri
+      enum: ["Male", "Female", "Other"], 
       required: true,
     },
     dateOfBirth: {
       type: Date,
-      required: true, // Doğum tarihi
+      required: true, 
     },
     nationality: {
       type: String,
-      required: true, // Milliyet
+      required: true, 
     },
     films: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Film", // Aktörün yer aldığı filmler
+        ref: "Film", 
       },
     ],
   },
   {
-    timestamps: true, // Oluşturulma ve güncellenme tarihlerini otomatik ekler
+    timestamps: true, 
   }
 );
 

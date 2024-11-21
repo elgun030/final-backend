@@ -114,45 +114,40 @@ export const deleteProduct = async (req, res) => {
   }
 };
 export const addToCart = async (req, res) => {
-  const { productId, quantity } = req.body; // Gelen istekten productId ve quantity alınır
+  const { productId, quantity } = req.body;
 
   try {
-    // Kullanıcıyı veritabanından al (veya session'dan alabilirsiniz)
-    const userId = req.user.id; // Kullanıcı ID'sini almak için örnek (req.user.id, middleware ile alınabilir)
-    
-    // Kullanıcının sepetini veritabanından al (bu örnekte user.cart'ı varsayıyoruz)
-    let user = await User.findById(userId); // User modelini ve metodu kendi yapınıza göre uyarlayın
+    const userId = req.user.id;
 
-    // Eğer kullanıcı yoksa hata döndür
+    let user = await User.findById(userId);
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Kullanıcının sepetinde zaten bu ürün var mı kontrol et
-    const existingItemIndex = user.cart.findIndex(item => item.productId === productId);
+    const existingItemIndex = user.cart.findIndex(
+      (item) => item.productId === productId
+    );
 
     if (existingItemIndex !== -1) {
-      // Ürün varsa, miktarı artır
-      user.cart[existingItemIndex].quantity += quantity; // Yeni quantity ekle
+      user.cart[existingItemIndex].quantity += quantity;
 
-      // Sepeti güncelle
-      await user.save(); // Veritabanına kaydet
+      await user.save();
 
-      return res.status(200).json({ message: 'Cart updated', cart: user.cart });
+      return res.status(200).json({ message: "Cart updated", cart: user.cart });
     } else {
-      // Ürün yoksa, yeni ürün olarak sepete ekle
       const newItem = { productId, quantity };
 
-      user.cart.push(newItem); // Yeni öğe ekle
+      user.cart.push(newItem);
 
-      // Sepeti kaydet
-      await user.save(); 
+      await user.save();
 
-      return res.status(200).json({ message: 'Item added to cart', cart: user.cart });
+      return res
+        .status(200)
+        .json({ message: "Item added to cart", cart: user.cart });
     }
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: 'Error adding item to cart' });
+    return res.status(500).json({ message: "Error adding item to cart" });
   }
 };
-

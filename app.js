@@ -3,29 +3,41 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
-import cors from "cors"; // CORS paketini ekle
+import cors from "cors";
 
-// Route'lar
+// Routes
+//user
 import UserRouter from "./Routes/user.routes.js";
+//product
 import ProductRouter from "./Routes/product.routes.js";
+//auth
 import AuthRouter from "./Routes/auth.routes.js";
+//faq
 import FAQRouter from "./Routes/faq.routes.js";
-import EventRouter from "./Routes/event.routes.js";
-import SocialRouter from "./Routes/social.routes.js";
+//rectangle
 import RectangleRouter from "./Routes/rectangle.routes.js";
+//news
 import NewsRouter from "./Routes/news.routes.js";
+//stream
 import StreamRouter from "./Routes/stream.routes.js";
+//choreographerEvent
 import choreographerEventRouter from "./Routes/choreographerEvent.routes.js";
+//actor
 import ActorRouter from "./Routes/actor.routes.js";
+//basket
 import BasketRouter from "./Routes/basket.routes.js";
+//newsSection
 import NewsSectionRouter from "./Routes/newsSection.routes.js";
-import TicketRoutes from "./Routes/ticket.routes.js";
-import TableRoutes from "./Routes/table.routes.js";
+//event
+import movieRouter from "./Routes/event.routes.js";
+//booking
+import bookingRoutes from "./Routes/booking.routes.js";
+//gallery
+import galleryRoutes from "./Routes/gallery.routes.js";
 
 const server = express();
 dotenv.config();
 
-// server.use(cors());
 server.use(
   cors({
     origin: (origin, callback) => {
@@ -44,21 +56,34 @@ server.use(
 server.use(express.json());
 server.use(cookieParser());
 
+//user
 server.use("/users", UserRouter);
+//product
 server.use("/products", ProductRouter);
+//auth
 server.use("/auth", AuthRouter);
+//faqs
 server.use("/faqs", FAQRouter);
-server.use("/api/events", EventRouter);
-server.use("/socials", SocialRouter);
+//rectangle
 server.use("/rectangles", RectangleRouter);
+//news
 server.use("/news", NewsRouter);
+//streams
 server.use("/streams", StreamRouter);
+//choreographer
 server.use("/choreographerEvents", choreographerEventRouter);
+//actors
 server.use("/actors", ActorRouter);
+//baskets
 server.use("/baskets", BasketRouter);
+//newsSection
 server.use("/newsSections", NewsSectionRouter);
-server.use("/api/tickets", TicketRoutes);
-server.use("/api/tables", TableRoutes);
+//event
+server.use("/movie", movieRouter);
+//booking
+server.use("/booking", bookingRoutes);
+//gallery
+server.use("/gallery", galleryRoutes);
 
 const PORT = process.env.PORT;
 const MONGODB_URL = process.env.MONGODB_URL;

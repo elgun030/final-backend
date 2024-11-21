@@ -1,5 +1,5 @@
 import Cart from "../Models/basket.model.js";
-import Product from "../Models/product.model.js"; // Game yerine Product olarak değiştirildi
+import Product from "../Models/product.model.js";
 
 export const addToCart = async (req, res) => {
   try {
@@ -12,7 +12,7 @@ export const addToCart = async (req, res) => {
       });
     }
 
-    const product = await Product.findById(productId); // Game yerine Product
+    const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -22,7 +22,7 @@ export const addToCart = async (req, res) => {
 
     let cart = await Cart.findOne({ userId });
     if (!cart) {
-      cart = new Cart({ userId, items: [] });
+      cart = new Cart({ userId, items: [], totalAmount: 0 });
     }
 
     const findCurrentProductIndex = cart.items.findIndex(
@@ -35,6 +35,9 @@ export const addToCart = async (req, res) => {
       cart.items[findCurrentProductIndex].quantity += quantity;
     }
 
+    const productPrice = product.price;
+    cart.totalAmount += quantity * productPrice;
+
     await cart.save();
     res.status(200).json({
       success: true,
@@ -44,7 +47,6 @@ export const addToCart = async (req, res) => {
     console.error("Error adding to cart:", error);
     res.status(500).json({
       success: false,
-      message: "An internal server error occurred",
     });
   }
 };
@@ -52,11 +54,22 @@ export const addToCart = async (req, res) => {
 export const getCartItems = async (req, res) => {
   const { userId } = req.params;
   try {
-    const cartItems = await Cart.find({ userId }).populate({
+    const cart = await Cart.findOne({ userId }).populate({
       path: "items.productId",
-      select: "image name price", // Ürünün resim, isim ve fiyat bilgileri alınıyor
+      select: "image name price",
     });
-    res.status(200).json(cartItems);
+
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: "Cart not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: cart,
+    });
   } catch (error) {
     res.status(500).json({ error: "Error fetching cart items" });
   }
@@ -69,7 +82,7 @@ export const updateCartItem = async (req, res) => {
     if (!userId || !productId || quantity <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid data provided!", // Buradaki hata mesajı, gelen verinin yanlış olduğunu belirtiyor
+        message: "Invalid data provided!",
       });
     }
 
@@ -88,31 +101,60 @@ export const updateCartItem = async (req, res) => {
     if (findCurrentProductIndex === -1) {
       return res.status(404).json({
         success: false,
-        message: "Cart item not found!",
+        message: "Cart item not present!",
       });
     }
 
-    cart.items[findCurrentProductIndex].quantity = quantity;
+    const existingItem = cart.items[findCurrentProductIndex];
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found!",
+      });
+    }
+
+    const productPrice = product.price;
+
+    cart.totalAmount -= existingItem.quantity * productPrice;
+    existingItem.quantity = quantity;
+    cart.totalAmount += existingItem.quantity * productPrice;
+
     await cart.save();
+
+    await cart.populate({
+      path: "items.productId",
+      select: "image name price",
+    });
+
+    const populatedItems = cart.items.map((item) => ({
+      productId: item.productId ? item.productId._id : null,
+      image: item.productId ? item.productId.image : null,
+      name: item.productId ? item.productId.name : "Product not found",
+      price: item.productId ? item.productId.price : null,
+      quantity: item.quantity,
+    }));
 
     res.status(200).json({
       success: true,
-      data: cart.items[findCurrentProductIndex], // Güncellenmiş öğe verisini döndürüyoruz
+      data: {
+        ...cart._doc,
+        items: populatedItems,
+      },
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error updating cart item:", error);
     res.status(500).json({
       success: false,
-      message: "Error updating cart item",
+      message: "An error occurred while updating the cart item.",
     });
   }
 };
 
-// basket.controller.js
-
 export const deleteCartItem = async (req, res) => {
   try {
     const { userId, productId } = req.params;
+
     if (!userId || !productId) {
       return res.status(400).json({
         success: false,
@@ -120,7 +162,6 @@ export const deleteCartItem = async (req, res) => {
       });
     }
 
-    // İlgili kullanıcının sepetini bulma ve ürün bilgilerini alma
     const cart = await Cart.findOne({ userId }).populate({
       path: "items.productId",
       select: "image name price",
@@ -133,16 +174,17 @@ export const deleteCartItem = async (req, res) => {
       });
     }
 
-    // Ürünü sepetten filtreleyerek çıkarma
     cart.items = cart.items.filter(
       (item) => item.productId._id.toString() !== productId
     );
 
-    // Sepeti güncelleme
+    const product = await Product.findById(productId);
+    const productPrice = product ? product.price : 0;
+    cart.totalAmount -= productPrice;
+
     await cart.save();
 
-    // Güncellenmiş ürün bilgilerini alarak yanıt oluşturma
-    const populateCartItems = cart.items.map((item) => ({
+    const populatedItems = cart.items.map((item) => ({
       productId: item.productId ? item.productId._id : null,
       image: item.productId ? item.productId.image : null,
       name: item.productId ? item.productId.name : "Product not found",
@@ -154,11 +196,11 @@ export const deleteCartItem = async (req, res) => {
       success: true,
       data: {
         ...cart._doc,
-        items: populateCartItems,
+        items: populatedItems,
       },
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error deleting cart item:", error);
     res.status(500).json({
       success: false,
       message: "An error occurred while deleting the cart item.",

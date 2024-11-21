@@ -1,24 +1,22 @@
 import express from "express";
 import {
+  addEvent,
   getAllEvents,
-  getSingleEvent,
-  createEvent,
-  editEvent,
+  getEventById,
+  updateEvent,
   deleteEvent,
 } from "../Controller/events.controller.js";
-import { protectRoutes } from "../Middleware/protectRoutes.js";
-import { checkAdmin } from "../Middleware/checkAdmin.js";
 
 const router = express.Router();
 
 router.get("/", getAllEvents);
 
-router.get("/:id", getSingleEvent);
+router.get("/:id", getEventById);
 
-router.post("/", protectRoutes, checkAdmin, createEvent);
+router.post("/add", addEvent);
 
-router.patch("/:id", protectRoutes, checkAdmin, editEvent);
+router.patch("/:id", updateEvent);
 
-router.delete("/:id", protectRoutes, checkAdmin, deleteEvent);
+router.delete("/:id", deleteEvent);
 
 export default router;

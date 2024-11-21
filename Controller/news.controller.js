@@ -1,6 +1,5 @@
-import News from "../Models/news.model.js"; // Model dosyanızın yoluna göre ayarlayın
+import News from "../Models/news.model.js";
 
-// Tüm haberleri al
 export const getAllNews = async (req, res) => {
   try {
     const news = await News.find();
@@ -10,7 +9,6 @@ export const getAllNews = async (req, res) => {
   }
 };
 
-// Tek bir haberi al
 export const getSingleNews = async (req, res) => {
   try {
     const news = await News.findById(req.params.id);
@@ -23,7 +21,6 @@ export const getSingleNews = async (req, res) => {
   }
 };
 
-// Yeni haber oluştur
 export const createNews = async (req, res) => {
   const { title, image } = req.body;
 
@@ -44,7 +41,6 @@ export const createNews = async (req, res) => {
   }
 };
 
-// Haberi güncelle
 export const editNews = async (req, res) => {
   const { title, image } = req.body;
 
@@ -65,7 +61,6 @@ export const editNews = async (req, res) => {
   }
 };
 
-// Haberi sil
 export const deleteNews = async (req, res) => {
   try {
     const deletedNews = await News.findByIdAndDelete(req.params.id);
