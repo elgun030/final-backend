@@ -39,14 +39,14 @@ const userSchema = new mongoose.Schema(
     purchasedMovies: [
       {
         type: mongoose.Types.ObjectId,
-        ref: "Movie", 
+        ref: "Movie",
       },
     ],
     cart: [
       {
         productId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Product", 
+          ref: "Product",
         },
         quantity: {
           type: Number,
@@ -54,6 +54,9 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    // Parola sıfırlama için eklenen alanlar
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
   },
   {
     timestamps: true,

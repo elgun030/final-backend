@@ -1,11 +1,85 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../Models/user.model.js";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 
-const omitPassword = (user) => {
-  const { password, ...userWithoutPassword } = user.toObject();
-  return userWithoutPassword;
+dotenv.config();
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  debug: true, 
+});
+
+export const requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, {
+      expiresIn: "1h", 
+    });
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Reset Request",
+      text: `Click the following link to reset your password: ${resetUrl}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Error sending email" });
+      }
+      return res.status(200).json({ message: "Password reset email sent" });
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
+
+
+export const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findOne({ email: decoded.email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+    }
+
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({ message: "Password successfully reset" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 
 export const signUp = async (req, res) => {
   const {
@@ -43,12 +117,8 @@ export const signUp = async (req, res) => {
   }
 
   try {
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET environment variable not defined");
-    }
-
-    const auth = await User.findOne({ userName });
-    if (auth) {
+    const existingUser = await User.findOne({ userName });
+    if (existingUser) {
       const userNameIndex = responseMessage.findIndex(
         ([field]) => field === "userName"
       );
@@ -58,31 +128,41 @@ export const signUp = async (req, res) => {
       return res.status(400).json({ responseMessage });
     }
 
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      const emailIndex = responseMessage.findIndex(
+        ([field]) => field === "email"
+      );
+      if (emailIndex !== -1) {
+        responseMessage[emailIndex][1] = "Email already exists";
+      }
+      return res.status(400).json({ responseMessage });
+    }
+
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newAuth = await User.create({
+    const newUser = await User.create({
       email,
       photo,
       fullName,
       userName,
       password: hashedPassword,
-      userName,
       isAdmin,
     });
 
-    const token = jwt.sign({ id: newAuth._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
       expiresIn: "15d",
     });
 
     return res.status(201).json({
-      responseMessage: "User created successfully",
-      data: omitPassword(newAuth),
+      message: "User created successfully",
+      data: newUser,
       token,
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ responseMessage: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -90,20 +170,12 @@ export const signIn = async (req, res) => {
   const { userName, password } = req.body;
 
   try {
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET environment variable not defined");
+    const user = await User.findOne({ userName });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: "Wrong username or password" });
     }
 
-    const existingUser = await User.findOne({ userName });
-
-    if (
-      !existingUser ||
-      !(await bcrypt.compare(password, existingUser.password))
-    ) {
-      return res.status(401).send({ message: "Wrong username or password" });
-    }
-
-    const token = jwt.sign({ id: existingUser._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "15d",
     });
 
@@ -115,14 +187,14 @@ export const signIn = async (req, res) => {
       path: "/",
     });
 
-    return res.status(200).send({
+    return res.status(200).json({
       message: "Successfully logged in",
-      data: omitPassword(existingUser),
+      data: user,
       token,
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ responseMessage: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -142,14 +214,3 @@ export const logOut = (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
-// export const logout = async (req, res) => {
-//   res.cookie("jwt", "", {
-//     expires: new Date(0),
-//     httpOnly: true,
-//     path: "/",
-//     sameSite: 'Strict'
-//   });
-
-//   res.status(200).send("Başarıyla çıkış yapıldı");
-// };
