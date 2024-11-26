@@ -5,21 +5,25 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
 dotenv.config();
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  debug: true, 
+  debug: true,
 });
+
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS:", process.env.EMAIL_PASS);
 
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
 
   try {
     const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, {
-      expiresIn: "1h", 
+      expiresIn: "1h",
     });
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
@@ -33,9 +37,10 @@ export const requestPasswordReset = async (req, res) => {
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error(error);
+        console.log(error);
         return res.status(500).json({ message: "Error sending email" });
       }
+      console.log("Password reset email sent to:", email);
       return res.status(200).json({ message: "Password reset email sent" });
     });
   } catch (error) {
@@ -44,24 +49,28 @@ export const requestPasswordReset = async (req, res) => {
   }
 };
 
-
 export const resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
 
   try {
+    console.log("Password reset token received:", token);
+
     if (!token) {
       return res.status(400).json({ message: "Token is required" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Decoded token:", decoded);
 
-    const user = await User.findOne({ email: decoded.email });
+    const user = await User.findById(decoded.id);
 
     if (!user) {
+      console.log("User not found for token:", token);
       return res.status(404).json({ message: "User not found" });
     }
 
     if (newPassword.length < 6) {
+      console.log("Password too short:", newPassword);
       return res
         .status(400)
         .json({ message: "Password must be at least 6 characters" });
@@ -73,13 +82,13 @@ export const resetPassword = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
+    console.log("Password successfully reset for user:", user.email);
     return res.status(200).json({ message: "Password successfully reset" });
   } catch (error) {
-    console.error(error);
+    console.error("Error in password reset:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 
 export const signUp = async (req, res) => {
   const {

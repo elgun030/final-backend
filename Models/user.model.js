@@ -54,7 +54,6 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
-    // Parola sıfırlama için eklenen alanlar
     resetPasswordToken: String,
     resetPasswordExpires: Date,
   },
@@ -63,7 +62,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// User modelini oluşturuyoruz
 const User = mongoose.model("User", userSchema);
 
 export default User;
