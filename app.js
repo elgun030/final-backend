@@ -41,12 +41,7 @@ dotenv.config();
 server.use(
   cors({
     origin: (origin, callback) => {
-      const allowedOrigins = [
-        "http://localhost:5173", // Geliştirme ortamı için localhost
-        "http://localhost:5174", // Eğer başka bir port varsa
-        "https://final-project-opera-ballet.vercel.app", // Vercel URL'si
-      ];
-
+      const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
       if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
         callback(null, true);
       } else {
@@ -54,7 +49,7 @@ server.use(
       }
     },
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    credentials: true, // Cookies kullanıyorsanız gerekli
+    credentials: true,
   })
 );
 
