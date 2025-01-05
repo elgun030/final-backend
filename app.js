@@ -44,7 +44,7 @@ server.use(
       const allowedOrigins = [
         "http://localhost:5173", // Geliştirme ortamı için localhost
         "http://localhost:5174", // Eğer başka bir port varsa
-        "https://final-project-opera-ballet.vercel.app/", // Vercel URL'si
+        "https://final-project-opera-ballet.vercel.app", // Vercel URL'si
       ];
 
       if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
